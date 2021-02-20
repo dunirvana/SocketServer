@@ -10,12 +10,12 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
@@ -56,12 +56,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void showMessage(final String message, final int color) {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                msgList.addView(textView(message, color));
-            }
-        });
+        handler.post(() -> msgList.addView(textView(message, color)));
     }
 
     @Override
@@ -80,21 +75,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private int _globalId = 0;
+
     private void sendMessage(final String message) {
         try {
+            JSONObject jsonData = new JSONObject();
+            jsonData.put("id", _globalId++);
+            jsonData.put("message", message);
+
             if (null != tempClientSocket) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        PrintWriter out = null;
-                        try {
-                            out = new PrintWriter(new BufferedWriter(
-                                    new OutputStreamWriter(tempClientSocket.getOutputStream())),
-                                    true);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        out.println(message);
+                new Thread(() -> {
+
+                    try {
+
+                        DataOutputStream dataOutputStream = new DataOutputStream(tempClientSocket.getOutputStream());
+                        dataOutputStream.writeUTF(jsonData.toString());
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }).start();
             }
@@ -131,15 +129,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     class CommunicationThread implements Runnable {
 
-        private Socket clientSocket;
-
-        private BufferedReader input;
+        private DataInputStream dataInputStream;
 
         public CommunicationThread(Socket clientSocket) {
-            this.clientSocket = clientSocket;
             tempClientSocket = clientSocket;
             try {
-                this.input = new BufferedReader(new InputStreamReader(this.clientSocket.getInputStream()));
+                dataInputStream = new DataInputStream(clientSocket.getInputStream());
+
             } catch (IOException e) {
                 e.printStackTrace();
                 showMessage("Error Connecting to Client!!", Color.RED);
@@ -151,15 +147,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    String read = input.readLine();
-                    if (null == read || "Disconnect".contentEquals(read)) {
+                    String messageFromClient = dataInputStream.readUTF();
+                    final JSONObject jsondata = new JSONObject(messageFromClient);
+                    String read = jsondata.getString("id") + " - " + jsondata.getString("message");
+
+                    if ("Disconnect".contentEquals(read)) {
                         Thread.interrupted();
                         read = "Client Disconnected";
                         showMessage("Client : " + read, greenColor);
                         break;
                     }
                     showMessage("Client : " + read, greenColor);
-                } catch (IOException e) {
+                } catch (IOException | JSONException e) {
                     e.printStackTrace();
                 }
 
