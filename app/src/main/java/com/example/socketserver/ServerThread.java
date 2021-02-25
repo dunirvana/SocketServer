@@ -49,8 +49,11 @@ class ServerThread implements Runnable {
 
                     try {
 
+                        String jsonEncrypted = Cryptography.encrypt(jsonData.toString(), null);
+
                         DataOutputStream dataOutputStream = new DataOutputStream(_tempClientSocket.getOutputStream());
-                        dataOutputStream.writeUTF(jsonData.toString());
+                        dataOutputStream.writeUTF(jsonEncrypted);
+
 
                         // se for uma mensagem de confirmacao de recebimento significa que o cliente esta acessivel, entao liberar novas tentativas de envio
                         _lastMessageSentConfirmed = isConfirmationMessage ? '-' : 'N';
@@ -59,6 +62,8 @@ class ServerThread implements Runnable {
                         e.printStackTrace();
 
                         ((IMessage)_context).showMessage("Nao foi possivel entregar a mensagem para o cliente", Color.RED);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }).start();
             }

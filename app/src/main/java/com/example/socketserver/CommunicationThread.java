@@ -41,7 +41,9 @@ class CommunicationThread implements Runnable {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                String messageFromClient = dataInputStream.readUTF();
+                //String messageFromClient = dataInputStream.readUTF();
+                String messageFromClient = Cryptography.decrypt(dataInputStream.readUTF(), null);
+
                 final JSONObject jsonData = new JSONObject(messageFromClient);
                 String read = jsonData.getString("id") + " - " + jsonData.getString("message");
 
@@ -67,6 +69,8 @@ class CommunicationThread implements Runnable {
 
 
             } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
