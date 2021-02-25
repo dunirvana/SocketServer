@@ -25,8 +25,24 @@ class ServerThread implements Runnable {
         _serverPort = serverPort;
     }
 
+    private char _lastMessageSentConfirmed = '-';
+
+    public void setLastMessageSentConfirmed(char value) {
+
+        _lastMessageSentConfirmed = value;
+    }
+
     public void sendMessage(JSONObject jsonData) {
+
+
         try {
+
+            boolean isConfirmationMessage = (jsonData.has("isConfirmationMessage") && jsonData.getString("isConfirmationMessage").equals("true"));
+
+            if (_lastMessageSentConfirmed == 'N' &&  isConfirmationMessage) {
+                ((IMessage)_context).showMessage("A ultima mensagem nao foi entregue, realize nova conexao com o servidor", Color.MAGENTA);
+                return;
+            }
 
             if (null != _tempClientSocket) {
                 new Thread(() -> {
@@ -36,8 +52,13 @@ class ServerThread implements Runnable {
                         DataOutputStream dataOutputStream = new DataOutputStream(_tempClientSocket.getOutputStream());
                         dataOutputStream.writeUTF(jsonData.toString());
 
+                        // se for uma mensagem de confirmacao de recebimento significa que o cliente esta acessivel, entao liberar novas tentativas de envio
+                        _lastMessageSentConfirmed = isConfirmationMessage ? '-' : 'N';
+
                     } catch (IOException e) {
                         e.printStackTrace();
+
+                        ((IMessage)_context).showMessage("Nao foi possivel entregar a mensagem para o cliente", Color.RED);
                     }
                 }).start();
             }

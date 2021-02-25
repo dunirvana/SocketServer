@@ -66,22 +66,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (view.getId() == R.id.send_data) {
             String msg = edMessage.getText().toString().trim();
             showMessage("Server : " + msg, Color.BLUE);
-            sendMessage(msg);
+            sendMessage(msg, false);
         }
     }
 
     private int _globalId = 0;
 
-    public void sendMessage(final String message) {
+    public void sendMessage(final String message, boolean isConfirmationMessage) {
         try {
             JSONObject jsonData = new JSONObject();
             jsonData.put("id", _globalId++);
             jsonData.put("message", message);
+            jsonData.put("isConfirmationMessage", isConfirmationMessage);
 
             _st.sendMessage(jsonData);
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void setLastMessageSentConfirmed(char value) {
+
+        _st.setLastMessageSentConfirmed(value);
     }
 
     public void setVisibility(int id, int visibility) {
@@ -97,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onDestroy() {
         super.onDestroy();
         if (null != serverThread) {
-            sendMessage("Disconnect");
+            sendMessage("Disconnect", false);
             serverThread.interrupt();
             serverThread = null;
         }

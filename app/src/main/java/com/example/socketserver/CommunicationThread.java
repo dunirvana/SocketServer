@@ -46,14 +46,26 @@ class CommunicationThread implements Runnable {
                 String read = jsonData.getString("id") + " - " + jsonData.getString("message");
 
                 if ("Disconnect".contentEquals(read)) {
-                    
+
                     Thread.currentThread().interrupt();
 
                     read = "Client Disconnected";
                     ((IMessage)_context).showMessage("Client : " + read, _greenColor);
                     break;
                 }
-                ((IMessage)_context).showMessage("Client : " + read, _greenColor);
+                if (!jsonData.has("isConfirmationMessage") || !jsonData.getString("isConfirmationMessage").equals("true")) {
+
+                    // se nao for uma mensagem de confirmacao coloca texto no display
+                    ((IMessage)_context).showMessage("Client : " + read, _greenColor);
+
+                    // envia para o servidor a confirmacao
+                    ((IMessage)_context).sendMessage("Server recebeu mensagem: " + jsonData.getString("id"), true);
+                }
+                else {
+                    ((IMessage)_context).setLastMessageSentConfirmed('Y');
+                }
+
+
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
             }
