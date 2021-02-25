@@ -16,7 +16,7 @@ public class Cryptography {
         byte[] byteMessage = nullPadString(message).getBytes();
         byte[] byteKey = key.getBytes();
         Key secretKey = new SecretKeySpec(byteKey, "AES");
-        Cipher c = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+        Cipher c = Cipher.getInstance("AES");
         c.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] cipher = c.doFinal(byteMessage);
 
@@ -30,7 +30,7 @@ public class Cryptography {
 
         byte[] byteKey = key.getBytes();
         Key secretKey = new SecretKeySpec(byteKey,"AES");
-        Cipher c = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+        Cipher c = Cipher.getInstance("AES");
         c.init(Cipher.DECRYPT_MODE, secretKey);
         byte[] byteDecoded = c.doFinal(toHex(decmessage));
 
